@@ -1,0 +1,66 @@
+pipeline {
+    agent any
+    tools {
+        maven 'maven3'
+    }
+
+    stages {
+        stage('checkout') {
+            steps {
+                echo 'cloning GIT HUB REPO'
+                git branch: 'main', url: 'https://github.com/rakesh1942/CICD-pipeline-end-to-end.git'
+            }
+        }
+        stage('sonar') {
+            steps {
+                echo 'scanning project'
+                sh 'ls -ltr'
+                sh ''' mvn sonar:sonar \\
+                      -Dsonar.host.url=http://100.26.205.166:9000 \\
+                      -Dsonar.login=squ_085861daeab325eb0004608361e582cd4eb46bf8 '''
+            }
+        }
+        stage('Build Artifact') {
+            steps {
+                echo 'Build Artifact'
+                sh 'mvn clean package'
+            }
+        }
+        stage('Docker Image') {
+            steps {
+                echo 'Docker Image Building'
+                sh 'docker build -t rakesh1942/batch13:${BUILD_NUMBER} .'
+            }
+        }
+        stage('Push to DockerHub') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'dockerhub', variable: 'dockerhub')]) {
+                        sh 'docker login -u rakesh1942 -p ${dockerhub}'
+}
+                    sh 'docker push rakesh1942/batch13:${BUILD_NUMBER}'
+                }
+            }
+        }
+        stage('Update Deployment File') {
+            environment {
+                GIT_REPO_NAME = "CICD-pipeline-end-to-end"
+                GIT_USER_NAME = "rakesh1942"
+            }
+            steps {
+                echo 'Update Deployment File'
+                withCredentials([string(credentialsId: 'githubtoken', variable: 'githubtoken')]) {
+                sh '''
+                git config user.eamin "rakeshkundarapu1942@gmail.com"
+                git config user.name "rakesh1942"
+                BUILD_NUMBER=${BUILD_NUMBER}
+                sed -i "s/batch13:.*/batch13:${BUILD_NUMBER}/g" deploymentfiles/deployment.yml
+                git add .
+                git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+                git push https://${githubtoken}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                '''
+                }
+            }
+        }
+    }
+}
