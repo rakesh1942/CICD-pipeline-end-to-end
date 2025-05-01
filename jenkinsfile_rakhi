@@ -16,8 +16,8 @@ pipeline {
                 echo 'scanning project'
                 sh 'ls -ltr'
                 sh ''' mvn sonar:sonar \\
-                      -Dsonar.host.url=http://100.26.205.166:9000 \\
-                      -Dsonar.login=squ_085861daeab325eb0004608361e582cd4eb46bf8 '''
+                      -Dsonar.host.url=http://52.73.130.40:9000 \\
+                      -Dsonar.login=squ_89a7cbaf32085ca991a88c3fe6eb8155eb7a5330 '''
             }
         }
         stage('Build Artifact') {
